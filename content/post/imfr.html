@@ -1,0 +1,72 @@
+---
+title: Bajar Data del Fondo Monetario Internacional IMF Utilizando R
+author: Fernando Greve
+date: '2020-05-31'
+slug: imfr
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-05-31T12:32:51-04:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+
+<p>El Fondo Monetario Internacional IMF ofrece una gran cantidad de Data que puede descargarse facilmente desde su sitio web. Tambien ofrece un interfaz de programacion de aplicaciones API. La libreria <a href="https://cran.r-project.org/web/packages/imfr/index.html">imfr</a> de R permite explotar la API del Fondo Monetario Internacional IMF (<a href="http://data.imf.org/">http://data.imf.org/</a>). Si bien no es la unica interfaz disponible (ver la libreria R <a href="https://cran.r-project.org/web/packages/IMFData/">IMFData</a>), creo que <a href="https://cran.r-project.org/web/packages/imfr/index.html">imfr</a> presenta un mejor performance. Aqui realizo una breve introduccion al uso de esta libreria.</p>
+<pre class="r"><code>library(imfr) </code></pre>
+<pre class="r"><code>imf_databases&lt;-imf_ids() </code></pre>
+<pre class="r"><code>DOT_codelist&lt;-imf_codelist(database_id = &quot;DOT&quot;)</code></pre>
+<pre class="r"><code>DOT_FREQ_codes&lt;-imf_codes(codelist = &quot;CL_FREQ&quot;)</code></pre>
+<pre class="r"><code>DOT_AREA_codes&lt;-imf_codes(codelist = &quot;CL_AREA_DOT&quot;)</code></pre>
+<pre class="r"><code>DOT_INDICATOR_codes&lt;-imf_codes(codelist = &quot;CL_INDICATOR_DOT&quot;)</code></pre>
+<pre class="r"><code>IFS_codelist&lt;-imf_codelist(database_id = &quot;IFS&quot;)</code></pre>
+<pre class="r"><code>IFS_INDICATOR_codes&lt;-imf_codes(codelist = &quot;CL_INDICATOR_IFS&quot;)</code></pre>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(countrycode)
+data(codelist)
+country_set &lt;- codelist
+country_set&lt;- country_set %&gt;% 
+  select(country.name.en , iso2c, iso3c, imf, continent, region) %&gt;% filter(!is.na(imf) &amp; !is.na(iso2c))</code></pre>
+<pre class="r"><code>Africa_ISO2&lt;- country_set$iso2c[country_set$continent==&quot;Africa&quot;]</code></pre>
+<pre class="r"><code>IFS_Africa&lt;-imf_data(database_id = &quot;IFS&quot;,indicator = c(&quot;BG_BP6_USD&quot; , &quot;LE_PE_NUM&quot; , &quot;EREER_IX&quot; , &quot;FMA_XDC&quot;), country = Africa_ISO2, freq = &#39;A&#39;, start = 1990 , end = current_year())</code></pre>
+<pre class="r"><code>Eastern_Asia_ISO2&lt;- c(&quot;CN&quot;, &quot;JP&quot; , &quot;KR&quot;)</code></pre>
+<pre class="r"><code>DOT_Eastern_Asia &lt;- imf_data(database_id = &quot;DOT&quot; , indicator = c(&quot;TXG_FOB_USD&quot;) , country = Eastern_Asia_ISO2 , start = 2010, end = current_year(), return_raw = TRUE)</code></pre>
+<pre class="r"><code>DOT_Eastern_Asia_Data &lt;- DOT_Eastern_Asia$CompactData$DataSet$Series
+
+library(tidyr) # unnest() 
+DOT_Eastern_Asia_Data &lt;- DOT_Eastern_Asia_Data %&gt;% 
+  filter(`@FREQ` == &quot;A&quot; &amp; `@COUNTERPART_AREA` %in% Africa_ISO2) %&gt;% unnest(Obs) %&gt;% 
+  arrange(`@REF_AREA`, `@COUNTERPART_AREA`)  </code></pre>
+<pre class="r"><code>head(DOT_Eastern_Asia_Data)</code></pre>
+<pre><code>## # A tibble: 6 x 8
+##   `@FREQ` `@REF_AREA` `@INDICATOR` `@COUNTERPART_A~ `@UNIT_MULT` `@TIME_FORMAT`
+##   &lt;chr&gt;   &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;            &lt;chr&gt;        &lt;chr&gt;         
+## 1 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 2 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 3 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 4 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 5 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 6 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## # ... with 2 more variables: `@TIME_PERIOD` &lt;chr&gt;, `@OBS_VALUE` &lt;chr&gt;</code></pre>
+<pre class="r"><code>library(CoordinateCleaner)
+data(countryref)
+Long_Lat &lt;-countryref %&gt;% 
+  filter(type == &quot;country&quot; &amp; iso2 %in% Africa_ISO2) %&gt;% 
+  select(iso2, &quot;destination_lon&quot; = centroid.lon , &quot;destination_lat&quot;= centroid.lat, capital.lon, capital.lat) %&gt;%
+  distinct(capital.lat, .keep_all = TRUE) %&gt;% 
+  mutate(China_Lat = 35.00000000, China_Long = 105.000) %&gt;% rename(&quot;destination&quot; = iso2)</code></pre>

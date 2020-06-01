@@ -5,12 +5,74 @@
     <link>/post/</link>
       <atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     <description>Posts</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 12 Jul 2019 00:00:00 +0000</lastBuildDate>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 31 May 2020 00:00:00 +0000</lastBuildDate>
     <image>
       <url>/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>Posts</title>
       <link>/post/</link>
     </image>
+    
+    <item>
+      <title>Bajar Data del Fondo Monetario Internacional IMF Utilizando R</title>
+      <link>/post/imfr/</link>
+      <pubDate>Sun, 31 May 2020 00:00:00 +0000</pubDate>
+      <guid>/post/imfr/</guid>
+      <description>
+
+
+&lt;p&gt;El Fondo Monetario Internacional IMF ofrece una gran cantidad de Data que puede descargarse facilmente desde su sitio web. Tambien ofrece un interfaz de programacion de aplicaciones API. La libreria &lt;a href=&#34;https://cran.r-project.org/web/packages/imfr/index.html&#34;&gt;imfr&lt;/a&gt; de R permite explotar la API del Fondo Monetario Internacional IMF (&lt;a href=&#34;http://data.imf.org/&#34;&gt;http://data.imf.org/&lt;/a&gt;). Si bien no es la unica interfaz disponible (ver la libreria R &lt;a href=&#34;https://cran.r-project.org/web/packages/IMFData/&#34;&gt;IMFData&lt;/a&gt;), creo que &lt;a href=&#34;https://cran.r-project.org/web/packages/imfr/index.html&#34;&gt;imfr&lt;/a&gt; presenta un mejor performance. Aqui realizo una breve introduccion al uso de esta libreria.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(imfr) &lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;imf_databases&amp;lt;-imf_ids() &lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;DOT_codelist&amp;lt;-imf_codelist(database_id = &amp;quot;DOT&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;DOT_FREQ_codes&amp;lt;-imf_codes(codelist = &amp;quot;CL_FREQ&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;DOT_AREA_codes&amp;lt;-imf_codes(codelist = &amp;quot;CL_AREA_DOT&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;DOT_INDICATOR_codes&amp;lt;-imf_codes(codelist = &amp;quot;CL_INDICATOR_DOT&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;IFS_codelist&amp;lt;-imf_codelist(database_id = &amp;quot;IFS&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;IFS_INDICATOR_codes&amp;lt;-imf_codes(codelist = &amp;quot;CL_INDICATOR_IFS&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(dplyr)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+## Attaching package: &amp;#39;dplyr&amp;#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## The following objects are masked from &amp;#39;package:stats&amp;#39;:
+## 
+##     filter, lag&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## The following objects are masked from &amp;#39;package:base&amp;#39;:
+## 
+##     intersect, setdiff, setequal, union&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(countrycode)
+data(codelist)
+country_set &amp;lt;- codelist
+country_set&amp;lt;- country_set %&amp;gt;% 
+  select(country.name.en , iso2c, iso3c, imf, continent, region) %&amp;gt;% filter(!is.na(imf) &amp;amp; !is.na(iso2c))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Africa_ISO2&amp;lt;- country_set$iso2c[country_set$continent==&amp;quot;Africa&amp;quot;]&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;IFS_Africa&amp;lt;-imf_data(database_id = &amp;quot;IFS&amp;quot;,indicator = c(&amp;quot;BG_BP6_USD&amp;quot; , &amp;quot;LE_PE_NUM&amp;quot; , &amp;quot;EREER_IX&amp;quot; , &amp;quot;FMA_XDC&amp;quot;), country = Africa_ISO2, freq = &amp;#39;A&amp;#39;, start = 1990 , end = current_year())&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Eastern_Asia_ISO2&amp;lt;- c(&amp;quot;CN&amp;quot;, &amp;quot;JP&amp;quot; , &amp;quot;KR&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;DOT_Eastern_Asia &amp;lt;- imf_data(database_id = &amp;quot;DOT&amp;quot; , indicator = c(&amp;quot;TXG_FOB_USD&amp;quot;) , country = Eastern_Asia_ISO2 , start = 2010, end = current_year(), return_raw = TRUE)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;DOT_Eastern_Asia_Data &amp;lt;- DOT_Eastern_Asia$CompactData$DataSet$Series
+
+library(tidyr) # unnest() 
+DOT_Eastern_Asia_Data &amp;lt;- DOT_Eastern_Asia_Data %&amp;gt;% 
+  filter(`@FREQ` == &amp;quot;A&amp;quot; &amp;amp; `@COUNTERPART_AREA` %in% Africa_ISO2) %&amp;gt;% unnest(Obs) %&amp;gt;% 
+  arrange(`@REF_AREA`, `@COUNTERPART_AREA`)  &lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;head(DOT_Eastern_Asia_Data)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 x 8
+##   `@FREQ` `@REF_AREA` `@INDICATOR` `@COUNTERPART_A~ `@UNIT_MULT` `@TIME_FORMAT`
+##   &amp;lt;chr&amp;gt;   &amp;lt;chr&amp;gt;       &amp;lt;chr&amp;gt;        &amp;lt;chr&amp;gt;            &amp;lt;chr&amp;gt;        &amp;lt;chr&amp;gt;         
+## 1 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 2 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 3 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 4 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 5 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## 6 A       CN          TXG_FOB_USD  AO               6            P1Y           
+## # ... with 2 more variables: `@TIME_PERIOD` &amp;lt;chr&amp;gt;, `@OBS_VALUE` &amp;lt;chr&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(CoordinateCleaner)
+data(countryref)
+Long_Lat &amp;lt;-countryref %&amp;gt;% 
+  filter(type == &amp;quot;country&amp;quot; &amp;amp; iso2 %in% Africa_ISO2) %&amp;gt;% 
+  select(iso2, &amp;quot;destination_lon&amp;quot; = centroid.lon , &amp;quot;destination_lat&amp;quot;= centroid.lat, capital.lon, capital.lat) %&amp;gt;%
+  distinct(capital.lat, .keep_all = TRUE) %&amp;gt;% 
+  mutate(China_Lat = 35.00000000, China_Long = 105.000) %&amp;gt;% rename(&amp;quot;destination&amp;quot; = iso2)&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Writing technical content in Academic</title>

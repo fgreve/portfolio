@@ -1,0 +1,107 @@
+---
+title: Bajar Data del Fondo Monetario Internacional IMF Utilizando R
+author: Fernando Greve
+date: '2020-05-31'
+slug: imfr
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-05-31T12:32:51-04:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+El Fondo Monetario Internacional IMF ofrece una gran cantidad de Data que puede descargarse facilmente desde su sitio web. Tambien ofrece un interfaz de programacion de aplicaciones API. La libreria [imfr](https://cran.r-project.org/web/packages/imfr/index.html) de R permite explotar la API del Fondo Monetario Internacional IMF ([http://data.imf.org/](http://data.imf.org/)). Si bien no es la unica interfaz disponible (ver la libreria R [IMFData](https://cran.r-project.org/web/packages/IMFData/)), creo que [imfr](https://cran.r-project.org/web/packages/imfr/index.html) presenta un mejor performance. Aqui realizo una breve introduccion al uso de esta libreria.
+
+```{r warning=FALSE}
+library(imfr) 
+```
+
+```{r, results="hide"}
+imf_databases<-imf_ids() 
+```
+
+```{r, results="hide"}
+DOT_codelist<-imf_codelist(database_id = "DOT")
+```
+
+```{r, results="hide"}
+DOT_FREQ_codes<-imf_codes(codelist = "CL_FREQ")
+```
+
+```{r, results="hide"}
+DOT_AREA_codes<-imf_codes(codelist = "CL_AREA_DOT")
+```
+
+```{r, results="hide"}
+DOT_INDICATOR_codes<-imf_codes(codelist = "CL_INDICATOR_DOT")
+```
+
+```{r, results="hide"}
+IFS_codelist<-imf_codelist(database_id = "IFS")
+```
+
+```{r, results="hide"}
+IFS_INDICATOR_codes<-imf_codes(codelist = "CL_INDICATOR_IFS")
+```
+
+```{r, results="hide"}
+library(dplyr)
+library(countrycode)
+data(codelist)
+country_set <- codelist
+country_set<- country_set %>% 
+  select(country.name.en , iso2c, iso3c, imf, continent, region) %>% filter(!is.na(imf) & !is.na(iso2c))
+```
+
+```{r, results="hide"}
+Africa_ISO2<- country_set$iso2c[country_set$continent=="Africa"]
+```
+
+```{r, results="hide"}
+IFS_Africa<-imf_data(database_id = "IFS",indicator = c("BG_BP6_USD" , "LE_PE_NUM" , "EREER_IX" , "FMA_XDC"), country = Africa_ISO2, freq = 'A', start = 1990 , end = current_year())
+```
+
+```{r, results="hide"}
+Eastern_Asia_ISO2<- c("CN", "JP" , "KR")
+```
+
+```{r, results="hide"}
+DOT_Eastern_Asia <- imf_data(database_id = "DOT" , indicator = c("TXG_FOB_USD") , country = Eastern_Asia_ISO2 , start = 2010, end = current_year(), return_raw = TRUE)
+```
+
+```{r, results="hide"}
+DOT_Eastern_Asia_Data <- DOT_Eastern_Asia$CompactData$DataSet$Series
+
+library(tidyr) # unnest() 
+DOT_Eastern_Asia_Data <- DOT_Eastern_Asia_Data %>% 
+  filter(`@FREQ` == "A" & `@COUNTERPART_AREA` %in% Africa_ISO2) %>% unnest(Obs) %>% 
+  arrange(`@REF_AREA`, `@COUNTERPART_AREA`)  
+```
+
+```{r}
+head(DOT_Eastern_Asia_Data)
+```
+
+```{r}
+library(CoordinateCleaner)
+data(countryref)
+Long_Lat <-countryref %>% 
+  filter(type == "country" & iso2 %in% Africa_ISO2) %>% 
+  select(iso2, "destination_lon" = centroid.lon , "destination_lat"= centroid.lat, capital.lon, capital.lat) %>%
+  distinct(capital.lat, .keep_all = TRUE) %>% 
+  mutate(China_Lat = 35.00000000, China_Long = 105.000) %>% rename("destination" = iso2)
+```
+
+
+
+
+
+
+
